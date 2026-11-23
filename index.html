@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>last</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+            touch-action: none;
+            overscroll-behavior: none;
+        }
+
+        /* Pantalla de Inicio */
+        #start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            cursor: pointer;
+            padding: 20px;
+            text-align: center;
+        }
+        .loader-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .center-circle {
+            width: 50px;
+            height: 50px;
+            background-color: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(255,255,255,0.8);
+        }
+        .orbiting-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #fff;
+            border-radius: 50%;
+            animation: orbit 1.5s linear infinite;
+        }
+        .orbiting-dot:nth-child(2) { animation-delay: -0.5s; }
+        .orbiting-dot:nth-child(3) { animation-delay: -1.0s; }
+
+        @keyframes orbit {
+            0% { transform: rotate(0deg) translateX(45px) rotate(0deg); }
+            100% { transform: rotate(360deg) translateX(45px) rotate(-360deg); }
+        }
+        .start-text {
+            color: #888;
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            line-height: 1.5;
+        }
+
+        /* Interfaz Principal */
+        #main-app {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+        
+        header {
+            font-size: 12px;
+            color: #777;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
+            padding-top: 10px;
+        }
+
+        .content-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 15px;
+        }
+
+        .item-title {
+            font-size: 19px;
+            font-weight: 500;
+            margin-bottom: 15px;
+            color: #fff;
+            line-height: 1.35;
+        }
+
+        .item-desc {
+            font-size: 14px;
+            color: #888;
+            line-height: 1.5;
+            padding: 0 5px;
+        }
+
+        footer {
+            font-size: 11px;
+            color: #555;
+            text-align: center;
+            padding-bottom: 10px;
+        }
+
+        /* Línea Animada de Feedback */
+        #transition-line {
+            position: fixed;
+            background: #fff;
+            box-shadow: 0 0 15px #fff;
+            z-index: 1500;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        /* Modo Incógnito */
+        #incognito-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            z-index: 4000;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Pantalla de Inicio -->
+    <div id="start-screen">
+        <div class="loader-container">
+            <div class="center-circle"></div>
+            <div class="orbiting-dot"></div>
+            <div class="orbiting-dot"></div>
+            <div class="orbiting-dot"></div>
+        </div>
+        <div class="start-text">Toca para iniciar<br><span style="font-size: 11px; color: #555;">last - Sistema de emergencia de Ángel, para la universidad</span></div>
+    </div>
+
+    <!-- Interfaz Principal -->
+    <div id="main-app">
+        <header id="header-status">Menú Principal</header>
+        <div class="content-box" id="content-display">
+            <div class="item-title" id="main-title">Tema 1: Introducción, Concepto y Características del Derecho Mercantil</div>
+            <div class="item-desc" id="main-subtitle">Desliza abajo para ver la Pregunta 1</div>
+        </div>
+        <footer>Izq/Der: Temas (1-7) | Arriba/Abajo: Preguntas</footer>
+    </div>
+
+    <!-- Línea Animada de Feedback y Audio -->
+    <div id="transition-line"></div>
+    <div id="incognito-screen"></div>
+    <audio id="incognito-audio" src="musica.mp3" loop></audio>
+
+    <script>
+        const db = {
+            "tema_1": {
+                "titulo": "Tema 1: Introducción, Concepto y Características del Derecho Mercantil",
+                "preguntas": [
+                    {
+                        "pregunta": "¿Qué es el Derecho Mercantil?",
+                        "respuesta": "Es la rama del derecho privado que regula las relaciones de las personas, los actos de comercio y las actividades económicas que buscan obtener una ganancia o lucro, así como el funcionamiento de los comerciantes y las empresas."
+                    },
+                    {
+                        "pregunta": "¿Cuál es la naturaleza jurídica del Derecho Mercantil y por qué pertenece al Derecho Privado?",
+                        "respuesta": "Su naturaleza es de Derecho Privado porque regula principalmente las relaciones entre particulares (personas o empresas) que actúan en su propio interés económico o patrimonial, y no en representación del Estado ejerciendo poder público."
+                    },
+                    {
+                        "pregunta": "¿Cuál es el objetivo principal del Derecho Mercantil?",
+                        "respuesta": "Ordenar, dar seguridad jurídica y facilitar las operaciones comerciales y económicas para que las compras, ventas, créditos y negocios funcionen con reglas claras, rápidas y confiables."
+                    },
+                    {
+                        "pregunta": "¿Por qué es importante el Derecho Mercantil en la vida diaria y en la Contaduría Pública?",
+                        "respuesta": "Porque da orden a la economía, protege a quienes negocian y aporta las bases legales para registrar operaciones, contratos, sociedades y obligaciones que luego se reflejan en la contabilidad de un negocio."
+                    },
+                    {
+                        "pregunta": "¿Cuáles son las características principales del Derecho Mercantil y qué significa cada una?",
+                        "respuesta": "Universal e internacional: el comercio cruza fronteras, por lo que muchas reglas y prácticas comerciales se parecen o se coordinan entre distintos países. Autonomía: tiene sus propias normas especiales y principios propios cuando la ley mercantil regula un caso (aunque se apoye en el Derecho Civil cuando falte una norma específica). Consuetudinario: la costumbre comercial (lo que los comerciantes hacen de manera repetida y aceptada en su actividad) tiene un peso importante como fuente. Progresivo y dinámico: cambia y se adapta rápido porque el comercio, los mercados y las formas de hacer negocios evolucionan constantemente. Celeridad: busca rapidez y agilidad en las transacciones, porque en los negocios el tiempo es dinero y los trámites lentos frenan el intercambio."
+                    },
+                    {
+                        "pregunta": "¿Por qué se dice que el Derecho Mercantil es universal?",
+                        "respuesta": "Porque el intercambio de bienes, servicios y capitales no se queda encerrado en un solo lugar; el comercio conecta mercados, rutas y países, haciendo que sus instituciones y usos tiendan a ser amplios y compartidos a nivel internacional."
+                    }
+                ]
+            },
+            "tema_2": {
+                "titulo": "Tema 2: Fuentes del Derecho Mercantil y Supletoriedad",
+                "preguntas": [
+                    {
+                        "pregunta": "¿Cuáles son las principales fuentes del Derecho Mercantil?",
+                        "respuesta": "Las fuentes principales son: la ley mercantil (incluyendo el Código de Comercio), la costumbre mercantil, la jurisprudencia mercantil y la supletoriedad del Código Civil ante el Código Mercantil."
+                    },
+                    {
+                        "pregunta": "¿Qué es la costumbre mercantil?",
+                        "respuesta": "Son las prácticas constantes, uniformes y conocidas que realizan los comerciantes en su actividad diaria y que se consideran obligatorias o válidas dentro del ámbito comercial cuando la ley lo permite."
+                    },
+                    {
+                        "pregunta": "¿Qué es la jurisprudencia mercantil?",
+                        "respuesta": "Es el criterio o interpretación reiterada que hacen los tribunales y jueces al resolver casos relacionados con materia mercantil."
+                    },
+                    {
+                        "pregunta": "¿Qué significa la supletoriedad del Código Civil ante el Código de Comercio?",
+                        "respuesta": "Significa que cuando en un caso comercial no existe una regla exacta o suficiente en el Código de Comercio ni en las leyes mercantiles especiales, se acude de forma complementaria (supletoria) a las normas del Código Civil para resolverlo."
+                    }
+                ]
+            },
+            "tema_3": {
+                "titulo": "Tema 3: Actos de Comercio y Ámbito de Aplicación",
+                "preguntas": [
+                    {
+                        "pregunta": "¿Qué es un acto de comercio y cuál es su fundamento jurídico?",
+                        "respuesta": "Es una operación o actividad económica regulada por la ley mercantil (como comprar para revender, operar empresas o usar ciertos títulos comerciales). Su fundamento jurídico está en la propia ley mercantil (como el Código de Comercio), que determina qué actos se rigen por este derecho y bajo qué condiciones."
+                    },
+                    {
+                        "pregunta": "¿Cómo se clasifican los actos de comercio?",
+                        "respuesta": "Se clasifican en objetivos, subjetivos y mixtos."
+                    },
+                    {
+                        "pregunta": "¿Qué es un acto de comercio objetivo?",
+                        "respuesta": "Es aquel que la ley califica como mercantil por su propia naturaleza o forma (por el acto en sí mismo), sin importar quién lo realice o si la persona es comerciante o no."
+                    },
+                    {
+                        "pregunta": "¿Qué es un acto de comercio subjetivo?",
+                        "respuesta": "Es aquel que se considera mercantil por la cualidad o condición del sujeto que lo realiza —específicamente, por ser ejecutado por un comerciante en el giro o actividad de su comercio—, salvo que el acto sea de naturaleza esencialmente civil."
+                    },
+                    {
+                        "pregunta": "¿Qué es un acto de comercio mixto?",
+                        "respuesta": "Es aquel acto que tiene carácter mercantil para una de las partes (por ejemplo, el comerciante o empresa que vende o presta el servicio) y carácter civil para la otra parte (por ejemplo, el consumidor final que compra para su uso personal)."
+                    },
+                    {
+                        "pregunta": "¿Cuál es el ámbito de aplicación de la legislación mercantil?",
+                        "respuesta": "Se aplica a los actos de comercio (objetivos, subjetivos y mixtos), a los comerciantes en su actividad mercantil, a las sociedades mercantiles y a las operaciones y bienes regulados por las leyes comerciales."
+                    }
+                ]
+            },
+            "tema_4": {
+                "titulo": "Tema 4: Evolución Histórica del Derecho Mercantil",
+                "preguntas": [
+                    {
+                        "pregunta": "¿Cómo evolucionó el Derecho Mercantil en la Edad Antigua?",
+                        "respuesta": "Existieron normas y prácticas vinculadas al intercambio y al comercio marítimo o fluvial en civilizaciones antiguas, pero el Derecho Mercantil aún no existía como una rama separada y autónoma del Derecho Civil."
+                    },
+                    {
+                        "pregunta": "¿Qué ocurrió con el Derecho Mercantil en la Edad Media?",
+                        "respuesta": "En la Edad Media cobró fuerza y autonomía propia: surgieron los gremios y corporaciones de comerciantes en las ciudades y ferias, quienes crearon sus propias reglas y costumbres para resolver conflictos comerciales con rapidez."
+                    },
+                    {
+                        "pregunta": "¿Cómo se caracteriza el Derecho Mercantil en la Edad Contemporánea?",
+                        "respuesta": "Se caracteriza por la codificación y modernización de las leyes comerciales, la expansión de las sociedades mercantiles, el comercio internacional y la adaptación constante a nuevas tecnologías, mercados y formas de intercambio."
+                    }
+                ]
+            },
+            "tema_5": {
+                "titulo": "Tema 5: Diferencias entre Derecho Civil y Derecho Mercantil",
+                "preguntas": [
+                    {
+                        "pregunta": "Diferencia en Finalidad habitual",
+                        "respuesta": "Derecho Civil: se centra en el uso personal, familiar o patrimonial ordinario sin buscar necesariamente especulación o lucro comercial. Derecho Mercantil: busca habitualmente el lucro, la ganancia o la actividad económica organizada y profesional."
+                    },
+                    {
+                        "pregunta": "Diferencia en Ritmo o rapidez",
+                        "respuesta": "Derecho Civil: suele ser más formal y pausado en ciertos actos y trámites. Derecho Mercantil: busca celeridad (rapidez y agilidad) para no entorpecer los negocios."
+                    },
+                    {
+                        "pregunta": "Diferencia en Sujetos frecuentes",
+                        "respuesta": "Derecho Civil: cualquier persona (ciudadanos, familias, propietarios) en su vida cotidiana. Derecho Mercantil: comerciantes, empresas y quienes realizan actos de comercio."
+                    },
+                    {
+                        "pregunta": "Diferencia en Papel frente al otro",
+                        "respuesta": "Derecho Civil: es el derecho común general y se aplica de forma supletoria. Derecho Mercantil: es un derecho especial que prevalece en operaciones mercantiles."
+                    }
+                ]
+            },
+            "tema_6": {
+                "titulo": "Tema 6: Casos Resueltos (¿Derecho Mercantil o Derecho Civil?)",
+                "preguntas": [
+                    {
+                        "pregunta": "Caso 1 (Compra personal): Una persona compra una computadora portátil en una tienda para hacer sus tareas universitarias.",
+                        "respuesta": "Derecho Civil (para el comprador), porque la compra es para uso personal y de estudio, sin intención de revender ni obtener una ganancia comercial. Si se analiza desde el lado de la tienda que vende habitualmente, es un acto mixto, con parte mercantil para el vendedor."
+                    },
+                    {
+                        "pregunta": "Caso 2 (Compra para reventa): Un comerciante compra 30 computadoras al mayor para revenderlas en su local y ganar dinero.",
+                        "respuesta": "Derecho Mercantil, porque existe ánimo de reventa y lucro dentro de una actividad comercial."
+                    },
+                    {
+                        "pregunta": "Caso 3 (Venta de herencia): Dos hermanos heredan una casa familiar y deciden venderla para repartirse el dinero.",
+                        "respuesta": "Derecho Civil, porque es un bien familiar y patrimonial ordinario, sin operación comercial habitual ni especulación mercantil."
+                    },
+                    {
+                        "pregunta": "Caso 4 (Suministro entre negocios): Una distribuidora de alimentos vende mercancía a crédito a un abasto para que la venda al público.",
+                        "respuesta": "Derecho Mercantil, porque son operaciones comerciales entre negocios destinadas a la circulación de mercancías y obtención de ganancia."
+                    },
+                    {
+                        "pregunta": "Caso 5 (Alquiler de vivienda): Una familia alquila un apartamento para vivir durante un año.",
+                        "respuesta": "Derecho Civil, porque es un arrendamiento de vivienda para uso doméstico y personal, no una actividad comercial."
+                    }
+                ]
+            },
+            "tema_7": {
+                "titulo": "Tema 7: Simulacro de Examen",
+                "preguntas": [
+                    {
+                        "pregunta": "Pregunta 1 (Desarrollo): ¿Por qué el Derecho Mercantil tiene la característica de la 'celeridad' y por qué es 'universal'?",
+                        "respuesta": "Tiene celeridad porque los negocios requieren rapidez y agilidad en las transacciones. Es universal porque el comercio conecta distintos mercados y países, compartiendo reglas internacionales."
+                    },
+                    {
+                        "pregunta": "Pregunta 2 (Desarrollo): Si un caso comercial no tiene una norma exacta en el Código de Comercio, ¿qué ley se aplica y cómo se llama ese principio?",
+                        "respuesta": "Se aplica el Código Civil de forma complementaria; ese principio se llama supletoriedad del Código Civil ante el Código de Comercio."
+                    },
+                    {
+                        "pregunta": "Pregunta 3 (Clasificación): Explica la diferencia entre un acto de comercio objetivo, uno subjetivo y uno mixto.",
+                        "respuesta": "El objetivo es mercantil por su propia naturaleza sin importar quién lo haga; el subjetivo lo es porque lo realiza un comerciante en su actividad; el mixto es mercantil para una parte (vendedor/empresa) y civil para la otra (consumidor)."
+                    },
+                    {
+                        "pregunta": "Pregunta 4 (Caso práctico): María tiene una panadería y compra 20 sacos de harina a una distribuidora para hacer pan y venderlo. ¿Se aplica Derecho Mercantil o Derecho Civil? Explica por qué.",
+                        "respuesta": "Derecho Mercantil, porque María es comerciante y compra materia prima con la finalidad de transformarla, venderla y obtener una ganancia (lucro)."
+                    },
+                    {
+                        "pregunta": "Pregunta 5 (Caso práctico): Carlos le vende su bicicleta usada a su vecino porque ya no la utiliza y quiere desocupar su garaje. ¿Se aplica Derecho Mercantil o Derecho Civil? Explica por qué.",
+                        "respuesta": "Derecho Civil, porque es una venta ocasional de un bien personal usado entre particulares, sin ánimo de lucro comercial ni actividad empresarial habitual."
+                    },
+                    {
+                        "pregunta": "Pregunta 6 (Caso práctico): Ana entra a una zapatería y compra un par de zapatos para usarlos en su graduación. ¿Qué tipo de acto es y qué derecho rige para Ana?",
+                        "respuesta": "Es un acto de comercio mixto (mercantil para la zapatería y civil para Ana). Para Ana rige el Derecho Civil porque compra para su uso personal."
+                    }
+                ]
+            }
+        };
+
+        const totalTemas = Object.keys(db).length;
+        let currentTema = 1;
+        let currentPregunta = -1; // -1 = Vista de Tema
+        let viewMode = 'tema'; 
+        
+        let tapCount = 0;
+        let tapTimer = null;
+        let isIncognito = false;
+
+        const synth = window.speechSynthesis;
+        const audioMusica = document.getElementById('incognito-audio');
+
+        function hablar(texto) {
+            if (!synth) return;
+            synth.cancel();
+            const utterance = new SpeechSynthesisUtterance(texto);
+            utterance.lang = 'es-ES';
+            utterance.rate = 1.0;
+            synth.speak(utterance);
+        }
+
+        function mostrarLineaAnimada(direccion) {
+            const line = document.getElementById('transition-line');
+            if (direccion === 'horizontal') {
+                line.style.top = '0'; line.style.left = '50%'; line.style.width = '4px'; line.style.height = '100%'; line.style.transform = 'translateX(-50%)';
+            } else {
+                line.style.top = '50%'; line.style.left = '0'; line.style.width = '100%'; line.style.height = '4px'; line.style.transform = 'translateY(-50%)';
+            }
+            line.style.opacity = '1';
+            setTimeout(() => { line.style.opacity = '0'; }, 300);
+        }
+
+        function actualizarUI() {
+            const header = document.getElementById('header-status');
+            const title = document.getElementById('main-title');
+            const subtitle = document.getElementById('main-subtitle');
+            const temaData = db[`tema_${currentTema}`];
+            const totalPreguntas = temaData.preguntas.length;
+
+            if (currentPregunta === -1) {
+                header.innerText = `Menú Principal - Tema ${currentTema}/${totalTemas}`;
+                title.innerText = temaData.titulo;
+                subtitle.innerText = "Desliza abajo para ver la Pregunta 1";
+                viewMode = 'tema';
+            } else {
+                header.innerText = `${temaData.titulo} (Pregunta ${currentPregunta + 1}/${totalPreguntas})`;
+                const itemData = temaData.preguntas[currentPregunta];
+
+                if (viewMode === 'pregunta') {
+                    title.innerText = itemData.pregunta;
+                    subtitle.innerText = "Doble tap para ver respuesta";
+                } else if (viewMode === 'respuesta') {
+                    title.innerText = itemData.respuesta;
+                    subtitle.innerText = "1 tap: repetir | 3 taps: volver al menú";
+                }
+            }
+        }
+
+        // Inicio del Sistema
+        const startScreen = document.getElementById('start-screen');
+        const mainApp = document.getElementById('main-app');
+        let appStarted = false;
+
+        function iniciarApp(e) {
+            if (e) e.preventDefault();
+            if (appStarted) return;
+            appStarted = true;
+            startScreen.style.opacity = '0';
+            setTimeout(() => {
+                startScreen.style.display = 'none';
+                mainApp.style.opacity = '1';
+                hablar("Sistema de emergencia de Ángel, para la universidad, bienvenido.");
+                actualizarUI();
+            }, 500);
+        }
+
+        startScreen.addEventListener('touchstart', iniciarApp, { passive: false });
+        startScreen.addEventListener('click', iniciarApp);
+
+        // Gestos nativos optimizados para Chrome Android y PC
+        let startX = 0, startY = 0;
+        let startTime = 0;
+        let isTracking = false;
+
+        function handleStart(x, y) {
+            if (!appStarted) return;
+            startX = x;
+            startY = y;
+            startTime = Date.now();
+            isTracking = true;
+        }
+
+        function handleEnd(x, y) {
+            if (!appStarted || !isTracking) return;
+            isTracking = false;
+
+            const diffX = x - startX;
+            const diffY = y - startY;
+            const elapsedTime = Date.now() - startTime;
+            const totalPreguntas = db[`tema_${currentTema}`].preguntas.length;
+
+            // Deslizamiento (Swipe) con umbral de 35px
+            if (Math.abs(diffX) > 35 || Math.abs(diffY) > 35) {
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    mostrarLineaAnimada('horizontal');
+                    currentTema = diffX > 0 ? (currentTema > 1 ? currentTema - 1 : totalTemas) : (currentTema < totalTemas ? currentTema + 1 : 1);
+                    currentPregunta = -1;
+                    viewMode = 'tema';
+                    actualizarUI();
+                    hablar(db[`tema_${currentTema}`].titulo);
+                } else {
+                    mostrarLineaAnimada('vertical');
+                    if (diffY > 0) {
+                        if (currentPregunta > -1) {
+                            currentPregunta--;
+                            if (currentPregunta === -1) {
+                                viewMode = 'tema';
+                                actualizarUI();
+                                hablar(db[`tema_${currentTema}`].titulo);
+                            } else {
+                                viewMode = 'pregunta';
+                                actualizarUI();
+                                hablar(db[`tema_${currentTema}`].preguntas[currentPregunta].pregunta);
+                            }
+                        }
+                    } else {
+                        if (currentPregunta < totalPreguntas - 1) {
+                            currentPregunta++;
+                            viewMode = 'pregunta';
+                            actualizarUI();
+                            hablar(db[`tema_${currentTema}`].preguntas[currentPregunta].pregunta);
+                        }
+                    }
+                }
+                tapCount = 0;
+                return;
+            }
+
+            // Toques (Taps)
+            if (elapsedTime < 400) {
+                tapCount++;
+                if (tapTimer) clearTimeout(tapTimer);
+
+                tapTimer = setTimeout(() => {
+                    if (tapCount === 1) {
+                        if (viewMode === 'tema') {
+                            hablar(db[`tema_${currentTema}`].titulo);
+                        } else if (viewMode === 'pregunta') {
+                            hablar(db[`tema_${currentTema}`].preguntas[currentPregunta].pregunta);
+                        } else if (viewMode === 'respuesta') {
+                            hablar(db[`tema_${currentTema}`].preguntas[currentPregunta].respuesta);
+                        }
+                    } else if (tapCount === 2) {
+                        if (viewMode === 'pregunta') {
+                            viewMode = 'respuesta';
+                            actualizarUI();
+                            hablar(db[`tema_${currentTema}`].preguntas[currentPregunta].respuesta);
+                        }
+                    } else if (tapCount === 3) {
+                        currentPregunta = -1;
+                        viewMode = 'tema';
+                        actualizarUI();
+                        hablar("Menú principal de temas");
+                    } else if (tapCount >= 4) {
+                        isIncognito = !isIncognito;
+                        document.getElementById('incognito-screen').style.display = isIncognito ? 'block' : 'none';
+                        if (isIncognito) {
+                            audioMusica.play().catch(err => console.log(err));
+                        } else {
+                            audioMusica.pause();
+                            audioMusica.currentTime = 0;
+                        }
+                        hablar(isIncognito ? "Modo incógnito activado" : "Modo incógnito desactivado");
+                    }
+                    tapCount = 0;
+                }, 280);
+            }
+        }
+
+        // Eventos táctiles Android
+        document.addEventListener('touchstart', (e) => {
+            if (!appStarted) return;
+            e.preventDefault();
+            const t = e.touches[0];
+            handleStart(t.clientX, t.clientY);
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            if (appStarted) e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('touchend', (e) => {
+            if (!appStarted) return;
+            e.preventDefault();
+            const t = e.changedTouches[0];
+            handleEnd(t.clientX, t.clientY);
+        }, { passive: false });
+
+        // Respaldo para ratón en PC
+        document.addEventListener('mousedown', (e) => {
+            if (e.button === 0) handleStart(e.clientX, e.clientY);
+        });
+        document.addEventListener('mouseup', (e) => {
+            if (e.button === 0) handleEnd(e.clientX, e.clientY);
+        });
+    </script>
+</body>
+</html>
